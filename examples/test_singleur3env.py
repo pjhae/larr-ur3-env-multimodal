@@ -198,7 +198,7 @@ def speedj_and_forceg(env_type='sim', render=False):
     null_obj_func = UprightConstraint()
     null_obj_func_front = FrontConstraint()
 
-    ee_pos_right = np.array([0.3, -0.15, 0.8])  ## end-effector
+    ee_pos_right = np.array([0.0, -0.4, 0.8])  ## end-effector
 
     q_right_des, iter_taken_right, err_right, null_obj_right = env.inverse_kinematics_ee(ee_pos_right,null_obj_func, arm='right')
     print(q_right_des)
@@ -219,7 +219,7 @@ def speedj_and_forceg(env_type='sim', render=False):
             sys.exit()
 
     # Move to goal
-    duration = 3.0 # in seconds
+    duration = 4.0 # in seconds
     obs_dict_current = env.env.get_obs_dict()
     q_right_des_vel = (q_right_des - obs_dict_current['right']['qpos'])/(duration*12)
     

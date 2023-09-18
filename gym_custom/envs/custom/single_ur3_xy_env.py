@@ -316,6 +316,8 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         id_cube_6 = self.sim.model.geom_name2id("cube_6")
         self.curr_pos_block = np.concatenate([self.sim.data.geom_xpos[id_cube_6][:2]])
 
+        print(self._get_ur3_qpos()[:self.ur3_nqpos])
+
         # gripper pos
         SO3, curr_pos, _ = self.forward_kinematics_ee(self._get_ur3_qpos()[:self.ur3_nqpos], 'right')
         self.curr_pos = curr_pos[:2]
@@ -370,7 +372,7 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
 
         rand_idx = np.random.randint(5)
         qpos[-21:-19] = block_pos_candi[rand_idx]
-
+        qpos[-21:-19] = [0.25, -0.50]
         self.set_state(qpos, qvel)
 
         return self._get_obs()
