@@ -18,18 +18,18 @@ from collections import OrderedDict
 import os
 import os.path as osp
 
-# ROS related
-import rospy
-from std_msgs.msg import String
-from geometry_msgs.msg import PoseStamped
+# # ROS related
+# import rospy
+# from std_msgs.msg import String
+# from geometry_msgs.msg import PoseStamped
 
-def listener_wait_msg():
+# def listener_wait_msg():
 
-    rospy.init_node('ros_subscription_test_node')
+#     rospy.init_node('ros_subscription_test_node')
 
-    cube_msg = rospy.wait_for_message('optitrack/cube_rainbow/poseStamped', PoseStamped)
+#     cube_msg = rospy.wait_for_message('optitrack/cube_rainbow/poseStamped', PoseStamped)
 
-    return cube_msg.pose.position
+#     return cube_msg.pose.position
 
 
 parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
@@ -77,7 +77,7 @@ args = parser.parse_args()
 num_epi = 16160
 
 # Rendering (if exp_type is real, render should be FALSE)
-render = False
+render = True
 
 # Environment
 if args.exp_type == "sim":
@@ -195,12 +195,12 @@ while True:
 
     while not done:
 
-        # # # ROS related
-        cube_pos = listener_wait_msg()
-        cube_pos_block_array = np.array([cube_pos.x, cube_pos.y]) -np.array([0.21217686, 0.51513129]) + np.array([-0.03, -0.31])
-        state[2:4] = cube_pos_block_array
+        # # # # ROS related
+        # cube_pos = listener_wait_msg()
+        # cube_pos_block_array = np.array([cube_pos.x, cube_pos.y]) -np.array([0.21217686, 0.51513129]) + np.array([-0.03, -0.31])
+        # state[2:4] = cube_pos_block_array
 
-        print(cube_pos_block_array, state[:2])
+        # print(cube_pos_block_array, state[:2])
         action = agent.select_action(state, evaluate=True)
         curr_pos = np.concatenate([state[:2],[0.8]])
         q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos+action, null_obj_func, arm='right')

@@ -174,7 +174,7 @@ def speedj_and_forceg(env_type='sim', render=False):
     list_of_env_types = ['sim', 'real']
     
     if env_type == list_of_env_types[0]:
-        env = gym_custom.make('single-ur3-xy-front-larr-for-train-v0')
+        env = gym_custom.make('single-ur3-xy-larr-for-train-v0')
         speedj_args = {'a': 5, 't': None, 'wait': None}
     elif env_type == list_of_env_types[1]:
         env = gym_custom.make('single-ur3-larr-real-v0',
@@ -198,7 +198,7 @@ def speedj_and_forceg(env_type='sim', render=False):
     null_obj_func = UprightConstraint()
     null_obj_func_front = FrontConstraint()
 
-    ee_pos_right = np.array([0.1, -0.3, 0.8])  ## end-effector
+    ee_pos_right = np.array([0.3, -0.15, 0.8])  ## end-effector
 
     q_right_des, iter_taken_right, err_right, null_obj_right = env.inverse_kinematics_ee(ee_pos_right,null_obj_func, arm='right')
     print(q_right_des)
