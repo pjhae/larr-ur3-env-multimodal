@@ -72,7 +72,7 @@ torch.manual_seed(args.seed)
 np.random.seed(args.seed)
 
 # For video
-video_directory = '/home/jonghae/larr-ur3-env-integrated/sac_single/video/{}'.format(datetime.datetime.now().strftime("%H:%M:%S %p"))
+video_directory = '/home/jonghae/larr-ur3-env-multimodal/sac_single/video/{}'.format(datetime.datetime.now().strftime("%H:%M:%S %p"))
 video = VideoRecorder(dir_name = video_directory)
 
 
@@ -140,7 +140,7 @@ for i_episode in itertools.count(1):
     episode_steps = 0
     done = False
     state = env.reset()
-    state[:2] = np.array([0.45, -0.35])
+    state[:2] = np.array([0.45, -0.325])
     state = state[:4]
     
     while not done:
@@ -206,7 +206,7 @@ for i_episode in itertools.count(1):
         for i in range(episodes):
 
             state = env.reset()
-            state[:2] = np.array([0.45, -0.35])
+            state[:2] = np.array([0.45, -0.325])
             state = state[:4]
             episode_steps = 0
             episode_reward = 0

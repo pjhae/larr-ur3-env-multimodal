@@ -186,7 +186,7 @@ episodes = 10
 
 while True:
     state = env.reset()
-    state[:2] = np.array([0.45, -0.35])
+    state[:2] = np.array([0.45, -0.325])
     state = state[:4]
     
     episode_reward = 0

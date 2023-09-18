@@ -57,7 +57,7 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         '''overridable method'''
         # Initial position for UR3
         self.init_qpos[0:self.ur3_nqpos] = \
-        np.array([ 1.22096933, -1.3951761, 1.4868261, -2.01667739, 0.84679318, -0.00242263])
+        np.array([ 1.19233047, -1.51248855,  1.62547755, -2.04504378,  0.85489129, -0.01958713]) # for (0.45, -0.325) 
         # np.array([90, -45, 135, -180, 45, 0])*np.pi/180.0 # right arm
        
 
@@ -316,14 +316,13 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         id_cube_6 = self.sim.model.geom_name2id("cube_6")
         self.curr_pos_block = np.concatenate([self.sim.data.geom_xpos[id_cube_6][:2]])
 
-        print(self._get_ur3_qpos()[:self.ur3_nqpos])
-
         # gripper pos
         SO3, curr_pos, _ = self.forward_kinematics_ee(self._get_ur3_qpos()[:self.ur3_nqpos], 'right')
         self.curr_pos = curr_pos[:2]
 
         # goal pos
-        goal_pos = np.array([0.0, -0.35])
+        goal_pos = np.array([0.0, -0.25])   # option1
+        # goal_pos = np.array([0.0, -0.40])   # option2
 
         # reward action
         reward_acion = -0.0000001*np.linalg.norm(a)
@@ -332,7 +331,7 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         reward_pos = -np.linalg.norm(self.curr_pos_block - goal_pos)
         reward_reaching = -np.linalg.norm(self.curr_pos_block - self.curr_pos)
 
-        if np.linalg.norm(self.curr_pos_block - goal_pos) < 0.05:
+        if np.linalg.norm(self.curr_pos_block - goal_pos) < 0.035:
             reward_pos = 100
             reward_reaching = 0
             print("goal in")
@@ -365,14 +364,21 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         qpos = self.init_qpos + self.np_random.uniform(size=self.model.nq, low=-0.01, high=0.01)
         qvel = self.init_qvel + self.np_random.uniform(size=self.model.nv, low=-0.01, high=0.01)
 
-        # qpos[-21] =  0.10 +0.35*np.random.rand() # x  0 ~ 0.55
-        # qpos[-20] = -0.30 -0.15*np.random.rand() # y -0.5 ~ -0.1
+        # Coordinates of the center of the circle
+        center_x, center_y = 0.3, -0.25   # option1
+        # center_x, center_y = 0.3, -0.40   # option2
 
-        block_pos_candi = np.array([[0.15, -0.3], [0.3, -0.3], [0.15, -0.4], [0.3, -0.4], [0.225, -0.35]])
+        # Set the radius to 5 cm
+        radius_cm = 0.05
 
-        rand_idx = np.random.randint(5)
-        qpos[-21:-19] = block_pos_candi[rand_idx]
-        qpos[-21:-19] = [0.25, -0.50]
+        # Generate a random angle and a random distance within the radius
+        random_angle = np.random.uniform(0, 2 * np.pi)
+        random_radius = np.random.uniform(0, radius_cm)
+
+        # Calculate the coordinates of the random point within the circle
+        random_point = np.array([center_x + random_radius * np.cos(random_angle), center_y + random_radius * np.sin(random_angle)])
+
+        qpos[-21:-19] = random_point
         self.set_state(qpos, qvel)
 
         return self._get_obs()
