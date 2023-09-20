@@ -331,7 +331,7 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         reward_pos = -np.linalg.norm(self.curr_pos_block - goal_pos)
         reward_reaching = -np.linalg.norm(self.curr_pos_block - self.curr_pos)
 
-        if np.linalg.norm(self.curr_pos_block - goal_pos) < 0.035:
+        if np.linalg.norm(self.curr_pos_block - goal_pos) < 0.05:
             reward_pos = 100
             reward_reaching = 0
             print("goal in")
@@ -369,7 +369,7 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         # center_x, center_y = 0.3, -0.40   # option2
 
         # Set the radius to 5 cm
-        radius_cm = 0.05
+        radius_cm = 0.035
 
         # Generate a random angle and a random distance within the radius
         random_angle = np.random.uniform(0, 2 * np.pi)

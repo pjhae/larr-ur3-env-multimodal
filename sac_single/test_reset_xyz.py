@@ -74,7 +74,8 @@ parser.add_argument('--exp_type', default="sim",
 args = parser.parse_args()
 
 # Episode to test
-num_epi = 14880
+num_epi = 12980
+
 # Rendering (if exp_type is real, render should be FALSE)
 render = True
 
@@ -178,6 +179,33 @@ class UprightConstraint(NullObjectiveBase):
 null_obj_func = UprightConstraint()
 
 
+# action generator
+def generate_action_sequence(start_point, end_point, max_distance):
+    dx = end_point[0] - start_point[0]
+    dy = end_point[1] - start_point[1]
+
+    num_steps_x = int(abs(dx) / max_distance[0])  # x축 이동 횟수
+    num_steps_y = int(abs(dy) / max_distance[1])  # y축 이동 횟수
+    num_steps = max(num_steps_x, num_steps_y)  # 더 큰 이동 횟수를 선택
+
+    action_sequence = []
+
+    if num_steps > 0:
+        step_x = dx / num_steps
+        step_y = dy / num_steps
+
+        for _ in range(num_steps):
+            action_sequence.append((step_x, step_y))
+
+    # 마지막 단계에서 남은 거리를 추가
+    remaining_distance_x = end_point[0] - (start_point[0] + step_x * num_steps)
+    remaining_distance_y = end_point[1] - (start_point[1] + step_y * num_steps)
+
+    action_sequence.append((remaining_distance_x, remaining_distance_y))
+
+    return np.array(action_sequence), len(action_sequence)
+
+
 # Start evaluation
 avg_reward = 0.
 avg_step = 0.
@@ -193,35 +221,60 @@ while True:
     done = False
 
     while not done:
+        if abs(state[2])>0.05:
+            # # # # ROS related
+            # cube_pos = listener_wait_msg()
+            # cube_pos_block_array = np.array([cube_pos.x, cube_pos.y]) -np.array([0.21217686, 0.51513129]) + np.array([-0.03, -0.31])
+            # state[2:4] = cube_pos_block_array
 
-        # # # # ROS related
-        # cube_pos = listener_wait_msg()
-        # cube_pos_block_array = np.array([cube_pos.x, cube_pos.y]) -np.array([0.21217686, 0.51513129]) + np.array([-0.03, -0.31])
-        # state[2:4] = cube_pos_block_array
+            # print(cube_pos_block_array, state[:2])
+            action = agent.select_action(state, evaluate=True)
 
-        # print(cube_pos_block_array, state[:2])
-        action = agent.select_action(state, evaluate=True)
-        curr_pos = np.concatenate([state[:2],[0.8]])
-        q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos+action, null_obj_func, arm='right')
-        dt = 1
-        qvel_right = (q_right_des - env.get_obs_dict()['right']['qpos'])/dt
+            curr_pos = np.concatenate([state[:2],[0.8]])
+            q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos+action, null_obj_func, arm='right')
+            dt = 1
+            qvel_right = (q_right_des - env.get_obs_dict()['right']['qpos'])/dt
 
-        next_state, reward, done, _  = env.step({
-            'right': {
-                'speedj': {'qd': qvel_right, 'a': speedj_args['a'], 't': speedj_args['t'], 'wait': speedj_args['wait']},
-                'move_gripper_force': {'gf': np.array([15.0])}
-            }
-        })
+            next_state, reward, done, _  = env.step({
+                'right': {
+                    'speedj': {'qd': qvel_right, 'a': speedj_args['a'], 't': speedj_args['t'], 'wait': speedj_args['wait']},
+                    'move_gripper_force': {'gf': np.array([15.0])}
+                }
+            })
 
+            
+            if render == True :
+                env.render()
+            episode_reward += reward
+            step += 1
+            state = next_state[:4]
+            reset_flag = False
+
+
+        reset_step = 0
+
+        action_sequence, _ = generate_action_sequence(state[:2], np.array([0.45, -0.325]), max_distance = (0.04, 0.04))
         
-        if render == True :
-            env.render()
-        episode_reward += reward
-        step += 1
-        state = next_state[:4]
-
         if abs(state[2])<0.05:
-            break
+            reset_flag = True
+
+            curr_pos = np.concatenate([state[:2],[0.8]])
+            action = np.concatenate([action_sequence[reset_step],[0]])
+            q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos + action, null_obj_func, arm='right')
+            dt = 1
+            qvel_right = (q_right_des - env.get_obs_dict()['right']['qpos'])/(dt)
+            next_state, reward, done, _  = env.step({
+                'right': {
+                    'speedj': {'qd': qvel_right, 'a': speedj_args['a'], 't': speedj_args['t'], 'wait': speedj_args['wait']},
+                    'move_gripper_force': {'gf': np.array([15.0])}
+                }
+            })
+            if render == True :
+                env.render()
+            episode_reward += reward
+            step += 1
+            state = next_state[:4]
+            reset_step +=1
 
          # If exp_type is real, evaluate just for 500 step
         if args.exp_type == "real" and step == 600:

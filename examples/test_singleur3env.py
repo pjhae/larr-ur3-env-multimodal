@@ -198,8 +198,7 @@ def speedj_and_forceg(env_type='sim', render=False):
     null_obj_func = UprightConstraint()
     null_obj_func_front = FrontConstraint()
 
-    ee_pos_right = np.array([0.45, -0.325, 0.8])  ## end-effector
-
+    ee_pos_right = np.array([0.35, -0.20, 0.8])  ## end-effector
     q_right_des, iter_taken_right, err_right, null_obj_right = env.inverse_kinematics_ee(ee_pos_right,null_obj_func, arm='right')
     print(q_right_des)
     
@@ -246,10 +245,46 @@ def speedj_and_forceg(env_type='sim', render=False):
         # print('left arm joint pos error [deg]: %f vel error [dps]: %f'%(np.rad2deg(left_pos_err), np.rad2deg(left_vel_err)))
     finish = time.time()
 
+    ee_pos_right = np.array([0.25, -0.20, 0.8])  ## end-effector
+    q_right_des, iter_taken_right, err_right, null_obj_right = env.inverse_kinematics_ee(ee_pos_right,null_obj_func, arm='right')
+    print(q_right_des)
+
+    # Move to goal
+    duration = 5.0 # in seconds
+    obs_dict_current = env.env.get_obs_dict()
+    q_right_des_vel = (q_right_des - obs_dict_current['right']['qpos'])/(duration*12)
+    
+    start = time.time()
+    for t in range(int(duration/dt)):
+        obs, _, _, _ = env.step({
+            'right': {
+                'speedj': {'qd': q_right_des_vel, 'a': speedj_args['a'], 't': speedj_args['t'], 'wait': speedj_args['wait']},
+                'move_gripper_force': {'gf': np.array([1.0])}
+            }
+        })
+
+        if render: env.render()
+        # TODO: get_obs_dict() takes a long time causing timing issues.
+        #   Is it due to Upboard's lackluster performance or some deeper
+        #   issues within UR Script wrppaer?
+        # obs_dict = env.env.get_obs_dict()
+        # right_pos_err = np.linalg.norm(obs_dict['right']['qpos'] - q_right_des)
+        # left_pos_err = np.linalg.norm(obs_dict['left']['qpos'] - q_left_des)
+        # right_vel_err = np.linalg.norm(obs_dict['right']['qvel'] - q_right_des_vel)
+        # left_vel_err = np.linalg.norm(obs_dict['left']['qvel'] - q_left_des_vel)
+        print('time: %f [s]'%(t*dt))
+        # print('right arm joint pos error [deg]: %f vel error [dps]: %f'%(np.rad2deg(right_pos_err), np.rad2deg(right_vel_err)))
+        # print('left arm joint pos error [deg]: %f vel error [dps]: %f'%(np.rad2deg(left_pos_err), np.rad2deg(left_vel_err)))
+    finish = time.time()
+
+
+
     # Stop
+
     t = 0
     qvel_err = np.inf
     q_right_des_vel = np.zeros([env.ur3_nqpos])
+
     while qvel_err > np.deg2rad(1e0):
         obs, _, _, _ = env.step({
             'right': {
