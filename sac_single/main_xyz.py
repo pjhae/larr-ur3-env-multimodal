@@ -226,7 +226,7 @@ for i_episode in itertools.count(1):
                         'move_gripper_force': {'gf': np.array([15.0])}
                     }
                 })
-                episode_reward += -np.linalg.norm([state[:2]-state[2:4]])
+                episode_reward += -np.linalg.norm([state[2]])
                 episode_steps += 1
 
                 state = next_state[:4]
