@@ -369,7 +369,7 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         # center_x, center_y = 0.3, -0.40   # option2
 
         # Set the radius to 5 cm
-        radius_cm = 0.03
+        radius_cm = 0.025
 
         # Generate a random angle and a random distance within the radius
         random_angle = np.random.uniform(0, 2 * np.pi)
