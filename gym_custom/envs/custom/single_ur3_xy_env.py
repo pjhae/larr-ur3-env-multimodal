@@ -351,7 +351,6 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
             self.set_state(qpos, qvel)
             self.do_simulation(a, self.frame_skip)
 
-
         ob = self._get_obs()
         done = False
 
