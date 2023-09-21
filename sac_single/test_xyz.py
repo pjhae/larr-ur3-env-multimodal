@@ -74,7 +74,7 @@ parser.add_argument('--exp_type', default="sim",
 args = parser.parse_args()
 
 # Episode to test
-num_epi = 14880
+num_epi = 15840
 # Rendering (if exp_type is real, render should be FALSE)
 render = True
 
@@ -212,16 +212,12 @@ while True:
                 'move_gripper_force': {'gf': np.array([15.0])}
             }
         })
-
-        
+ 
         if render == True :
             env.render()
         episode_reward += reward
         step += 1
         state = next_state[:4]
-
-        if abs(state[2])<0.05:
-            break
 
          # If exp_type is real, evaluate just for 500 step
         if args.exp_type == "real" and step == 600:

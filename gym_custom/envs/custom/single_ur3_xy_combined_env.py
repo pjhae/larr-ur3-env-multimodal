@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 # For Simulation environment
 
-class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
+class SingleUR3XYCOMBEnv(MujocoEnv, utils.EzPickle):
 
     # class variables
     mujoco_xml_full_path = os.path.join(os.path.dirname(__file__), 'assets/ur3/single_ur3_base.xml')
@@ -28,8 +28,8 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
     ENABLE_COLLISION_CHECKER = False
     # ee position
     curr_pos = np.array([0, 0])
-    curr_pos_block = np.array([1,1])
-
+    curr_pos_block  = np.array([0.3, -0.25])
+    curr_pos_block2 = np.array([0.3, -0.40])
 
     def __init__(self):
         if self.ENABLE_COLLISION_CHECKER:
@@ -256,7 +256,7 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
 
     def _get_obs(self):
         '''overridable method'''
-        return np.concatenate([self.curr_pos, self.curr_pos_block, np.sin(self._get_ur3_qpos()), np.cos(self._get_ur3_qpos()),
+        return np.concatenate([self.curr_pos, self.curr_pos_block, self.curr_pos_block2, np.sin(self._get_ur3_qpos()), np.cos(self._get_ur3_qpos()),
                                self._get_gripper_qpos(), self._get_gripper_qvel()]).ravel()
     
 ####
@@ -287,7 +287,7 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
 
     def get_obs(self):
         '''overridable method'''
-        return np.concatenate([self.curr_pos, self.curr_pos_block, np.sin(self._get_ur3_qpos()), np.cos(self._get_ur3_qpos()),
+        return np.concatenate([self.curr_pos, self.curr_pos_block, self.curr_pos_block2, np.sin(self._get_ur3_qpos()), np.cos(self._get_ur3_qpos()),
                                self._get_gripper_qpos(), self._get_gripper_qvel()]).ravel()
 
 ####
@@ -314,7 +314,9 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
 
         # cube pos
         id_cube_6 = self.sim.model.geom_name2id("cube_6")
+        id_cube_7 = self.sim.model.geom_name2id("cube_7")
         self.curr_pos_block = np.concatenate([self.sim.data.geom_xpos[id_cube_6][:2]])
+        self.curr_pos_block2 = np.concatenate([self.sim.data.geom_xpos[id_cube_7][:2]])
 
         # gripper pos
         SO3, curr_pos, _ = self.forward_kinematics_ee(self._get_ur3_qpos()[:self.ur3_nqpos], 'right')
@@ -351,7 +353,6 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
             self.set_state(qpos, qvel)
             self.do_simulation(a, self.frame_skip)
 
-
         ob = self._get_obs()
         done = False
 
@@ -365,23 +366,22 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         qvel = self.init_qvel + self.np_random.uniform(size=self.model.nv, low=-0.01, high=0.01)
 
         # Coordinates of the center of the circle
-        # center_x, center_y = 0.3, -0.25   # option1
-        center_x, center_y = 0.3, -0.40   # option2
+        center_x, center_y = 0.3, -0.25   # option1
+        # center_x, center_y = 0.3, -0.40   # option2
 
         # Set the radius to 5 cm
-        radius_cm = 0.035
+        radius_cm = 0.02
 
         # Generate a random angle and a random distance within the radius
-        random_angle = np.random.uniform(0, 2 * np.pi)
-        random_radius = np.random.uniform(0, radius_cm)
+        random_angle = np.random.uniform(0, 2*np.pi)
+        random_radius = radius_cm
+        # random_radius = np.random.uniform(0, radius_cm)
         
         # Calculate the coordinates of the random point within the circle
         random_point = np.array([center_x + random_radius * np.cos(random_angle), center_y + random_radius * np.sin(random_angle)])
 
         qpos[-21:-19] = random_point
-
-        qpos[-12] = np.array([0.1])
-
+        qpos[-14:-12] = np.array([0.3, -0.4])
         self.set_state(qpos, qvel)
 
         return self._get_obs()

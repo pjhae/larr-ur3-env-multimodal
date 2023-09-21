@@ -108,6 +108,9 @@ env.wrapper_right.ur3_scale_factor[:6] = [24.52907494 ,24.02851783 ,25.56517597,
 # Agent
 agent = SAC(4, action_space, args)
 
+# If you want to learn continually
+# agent.load_checkpoint("checkpoints_single/sac_checkpoint_{}_{}".format('single-ur3-larr-for-train-v0', 15840), False)
+
 # Tesnorboard
 writer = SummaryWriter('runs_single/{}_SAC_{}_{}_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), 'single-ur3-larr-for-train-v0',
                                                              args.policy, "autotune" if args.automatic_entropy_tuning else ""))
@@ -227,7 +230,7 @@ for i_episode in itertools.count(1):
                     }
                 })
                 block1_goal, block2_goal = np.array([0.0, -0.25]), np.array([0.0, -0.40])
-                episode_reward += -np.linalg.norm([block1_goal - state[2:4]])
+                episode_reward += -np.linalg.norm([block2_goal - state[2:4]])
                 episode_steps += 1
 
                 state = next_state[:4]
