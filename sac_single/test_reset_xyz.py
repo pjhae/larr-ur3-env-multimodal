@@ -61,7 +61,7 @@ parser.add_argument('--exp_type', default="sim",
 args = parser.parse_args()
 
 # Rendering (if exp_type is real, render should be FALSE)
-render = False
+render = True
 
 # Environment
 if args.exp_type == "sim":
@@ -197,8 +197,8 @@ def generate_action_sequence(start_point, end_point, max_distance):
     return np.array(action_sequence), len(action_sequence)
 
 
-# Make data array
 
+# Make data array
 n_episode = 1000
 n_horrizon = 1000
 
@@ -208,8 +208,10 @@ n_dim_action = 2
 data_obs = np.zeros([n_episode, n_horrizon, n_dim_state])
 data_act = np.zeros([n_episode, n_horrizon, n_dim_action])
 
+
 # Start evaluation
 episodes = 0.
+start_time = time.time()
 
 while True:
 
@@ -407,9 +409,16 @@ while True:
 
     
     # Episode is over
+    이터레이션이랑 에피소드 분리해서 변수 관리하기
     episodes += 1
-    print("{}st episode is over..".format(int(episodes)))
+    time_elapsed = time.time() - start_time
+    print("{}st iteration is over, {} episode is saved, {} min elapsed !! ".format(int(episodes), int(2*episodes), int(time_elapsed/60)))
 
+
+    # Finish getting data if max num_epi is reached
+    if episodes == n_episode:
+        print("MAX num_epi is reached : Finish getting data!")
+        break
 
 
 
