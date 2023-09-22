@@ -61,7 +61,7 @@ parser.add_argument('--exp_type', default="sim",
 args = parser.parse_args()
 
 # Rendering (if exp_type is real, render should be FALSE)
-render = True
+render = False
 
 # Environment
 if args.exp_type == "sim":
@@ -197,10 +197,19 @@ def generate_action_sequence(start_point, end_point, max_distance):
     return np.array(action_sequence), len(action_sequence)
 
 
+# Make data array
+
+n_episode = 1000
+n_horrizon = 1000
+
+n_dim_state = 6    # 2(robot) + 2(block1) + 2(block2)
+n_dim_action = 2
+
+data_obs = np.zeros([n_episode, n_horrizon, n_dim_state])
+data_act = np.zeros([n_episode, n_horrizon, n_dim_action])
+
 # Start evaluation
-avg_reward = 0.
-avg_step = 0.
-episodes = 10
+episodes = 0.
 
 while True:
 
@@ -210,11 +219,10 @@ while True:
     state[:6] = np.array([0.45, -0.325, 0.3, -0.25, 0.3, -0.40])
     state = state[:6]
     
-    episode_reward = 0
     step = 0
     done = False
     reset_flag = True
-
+    
     while not done:
 
         ############ Reset action generator ############
@@ -300,7 +308,6 @@ while True:
             state = next_state[:6]
 
 
-
     ############ RED FIRST #############
     ####################################
 
@@ -308,7 +315,6 @@ while True:
     state[:6] = np.array([0.45, -0.325, 0.3, -0.25, 0.3, -0.40])
     state = state[:6]
     
-    episode_reward = 0
     step = 0
     done = False
     reset_flag = True
@@ -399,8 +405,10 @@ while True:
             step += 1
             state = next_state[:6]
 
-       
-        
+    
+    # Episode is over
+    episodes += 1
+    print("{}st episode is over..".format(int(episodes)))
 
 
 

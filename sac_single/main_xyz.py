@@ -63,7 +63,7 @@ gripper_scale_factor = np.array([1.0])
 env = URScriptWrapper(env, PID_gains, ur3_scale_factor, gripper_scale_factor)
 
 # Max episode
-max_episode_steps = 500
+max_episode_steps = 600
 
 # For reproducibility
 env.seed(args.seed)
@@ -178,7 +178,7 @@ for i_episode in itertools.count(1):
                 'move_gripper_force': {'gf': np.array([15.0])}
             }
         })
-        
+
         # next_state, reward, done, _ = env.step(action) # Step
         episode_steps += 1
         total_numsteps += 1

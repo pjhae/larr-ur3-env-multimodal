@@ -369,11 +369,11 @@ class SingleUR3XYEnv(MujocoEnv, utils.EzPickle):
         center_x, center_y = 0.3, -0.40   # option2
 
         # Set the radius to 5 cm
-        radius_cm = 0.035
+        radius_cm = 0.025
 
         # Generate a random angle and a random distance within the radius
         random_angle = np.random.uniform(0, 2 * np.pi)
-        random_radius = np.random.uniform(0, radius_cm)
+        random_radius = radius_cm
         
         # Calculate the coordinates of the random point within the circle
         random_point = np.array([center_x + random_radius * np.cos(random_angle), center_y + random_radius * np.sin(random_angle)])
@@ -427,3 +427,5 @@ def test_video_record(env):
 if __name__ == '__main__':
     env = gym_custom.make('single-ur3-larr-v0')
     test_video_record(env)
+
+    
