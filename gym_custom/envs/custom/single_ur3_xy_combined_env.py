@@ -366,22 +366,27 @@ class SingleUR3XYCOMBEnv(MujocoEnv, utils.EzPickle):
         qvel = self.init_qvel + self.np_random.uniform(size=self.model.nv, low=-0.01, high=0.01)
 
         # Coordinates of the center of the circle
-        center_x, center_y = 0.3, -0.25   # option1
-        # center_x, center_y = 0.3, -0.40   # option2
+        center_x_red, center_y_red = 0.3, -0.25   # option1
+        center_x_blue, center_y_blue = 0.3, -0.40   # option2
 
         # Set the radius to 5 cm
         radius_cm = 0.02
 
         # Generate a random angle and a random distance within the radius
-        random_angle = np.random.uniform(0, 2*np.pi)
-        random_radius = radius_cm
+        random_angle_red = np.random.uniform(0, 2*np.pi)
+        random_radius_red = radius_cm
         # random_radius = np.random.uniform(0, radius_cm)
-        
-        # Calculate the coordinates of the random point within the circle
-        random_point = np.array([center_x + random_radius * np.cos(random_angle), center_y + random_radius * np.sin(random_angle)])
+        random_angle_blue = np.random.uniform(0, 2*np.pi)
+        random_radius_blue = radius_cm
+        # random_radius = np.random.uniform(0, radius_cm)
 
-        qpos[-21:-19] = random_point
-        qpos[-14:-12] = np.array([0.3, -0.4])
+        # Calculate the coordinates of the random point within the circle
+        random_point_red  = np.array([center_x_red + random_radius_red * np.cos(random_angle_red), center_y_red + random_radius_red * np.sin(random_angle_red)])
+        random_point_blue = np.array([center_x_blue+ random_radius_blue * np.cos(random_angle_blue), center_y_blue + random_radius_blue * np.sin(random_angle_blue)])
+        
+        qpos[-21:-19] = random_point_red
+        qpos[-14:-12] = random_point_blue
+
         self.set_state(qpos, qvel)
 
         return self._get_obs()

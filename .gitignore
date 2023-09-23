@@ -21,6 +21,8 @@ video/
 checkpoints_dual/
 checkpoints_single/
 checkpoints_single_block1/
+checkpoints_single_block2/
+
 checkpoints_single_excellent/
 sac_single/video/
 sac_dual/video/

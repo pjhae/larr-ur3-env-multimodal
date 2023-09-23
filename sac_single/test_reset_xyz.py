@@ -17,7 +17,7 @@ from gym_custom.envs.real.utils import ROSRate, prompt_yes_or_no
 from collections import OrderedDict
 import os
 import os.path as osp
-
+from utils import save_data, load_data
 
 parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
 parser.add_argument('--env-name', default="HalfCheetah-v2",
@@ -61,7 +61,7 @@ parser.add_argument('--exp_type', default="sim",
 args = parser.parse_args()
 
 # Rendering (if exp_type is real, render should be FALSE)
-render = True
+render = False
 
 # Environment
 if args.exp_type == "sim":
@@ -149,8 +149,7 @@ memory = ReplayMemory(args.replay_size, args.seed)
 
 # Load the parameter
 agent_red.load_checkpoint("best_policy/red_block/sac_checkpoint_{}_{}".format('single-ur3-larr-for-train-v0', 14660), True) #14660 is best
-agent_blue.load_checkpoint("best_policy/blue_block/sac_checkpoint_{}_{}".format('single-ur3-larr-for-train-v0', 15840), True)
-
+agent_blue.load_checkpoint("best_policy/blue_block/sac_checkpoint_{}_{}".format('single-ur3-larr-for-train-v0', 7440), True)
 
 # Constraint
 class UprightConstraint(NullObjectiveBase):
@@ -164,7 +163,6 @@ class UprightConstraint(NullObjectiveBase):
         return 1.0 - np.dot(axis_curr, axis_des)
     
 null_obj_func = UprightConstraint()
-
 
 # RESET action generator
 def generate_action_sequence(start_point, end_point, max_distance):
@@ -204,13 +202,15 @@ n_horrizon = 1000
 
 n_dim_state = 6    # 2(robot) + 2(block1) + 2(block2)
 n_dim_action = 2
+n_dim_mask = 1
 
 data_obs = np.zeros([n_episode, n_horrizon, n_dim_state])
 data_act = np.zeros([n_episode, n_horrizon, n_dim_action])
-
+data_msk = np.zeros([n_episode, n_horrizon, n_dim_mask])
 
 # Start evaluation
-episodes = 0.
+iteration = 0
+episodes = 0
 start_time = time.time()
 
 while True:
@@ -221,10 +221,10 @@ while True:
     state[:6] = np.array([0.45, -0.325, 0.3, -0.25, 0.3, -0.40])
     state = state[:6]
     
-    step = 0
+    step = -1
     done = False
     reset_flag = True
-    
+
     while not done:
 
         ############ Reset action generator ############
@@ -246,6 +246,7 @@ while True:
         
             if render == True :
                 env.render()
+    
             step += 1
             state = next_state[:6]
 
@@ -309,15 +310,24 @@ while True:
             step += 1
             state = next_state[:6]
 
+        
+        # Add data
+        data_obs[episodes][step][:] = state[:6]
+        data_act[episodes][step][:] = action[:2]
+        data_msk[episodes][step][:] = 1
+
+        if np.linalg.norm(state[:2] - np.array([0.45, -0.325])) < 0.01 and step > 900:
+            data_msk[episodes][step][:] = 0
 
     ############ RED FIRST #############
     ####################################
+    episodes += 1
 
     state = env.reset()
     state[:6] = np.array([0.45, -0.325, 0.3, -0.25, 0.3, -0.40])
     state = state[:6]
     
-    step = 0
+    step = -1
     done = False
     reset_flag = True
 
@@ -407,17 +417,39 @@ while True:
             step += 1
             state = next_state[:6]
 
-    
-    # Episode is over
-    이터레이션이랑 에피소드 분리해서 변수 관리하기
+
+        # Add data
+        data_obs[episodes][step][:] = state[:6]
+        data_act[episodes][step][:] = action[:2]
+        data_msk[episodes][step][:] = 1
+
+        if np.linalg.norm(state[:2] - np.array([0.45, -0.325])) < 0.01 and step > 900:
+            data_msk[episodes][step][:] = 0
+
+
+    # When each iteration is over
+    iteration += 1
     episodes += 1
     time_elapsed = time.time() - start_time
-    print("{}st iteration is over, {} episode is saved, {} min elapsed !! ".format(int(episodes), int(2*episodes), int(time_elapsed/60)))
+    print("{}st iteration is over, {} episode is saved, {} min elapsed !! ".format(int(iteration), int(episodes), int(time_elapsed/60)))
 
 
     # Finish getting data if max num_epi is reached
     if episodes == n_episode:
         print("MAX num_epi is reached : Finish getting data!")
+
+        shape_obs = data_obs.shape
+        shape_act = data_act.shape
+        shape_msk = data_msk.shape
+
+        print(f"Dim of data_obs : {shape_obs[0]}X{shape_obs[1]}X{shape_obs[2]}")
+        print(f"Dim of data_act : {shape_act[0]}X{shape_act[1]}X{shape_act[2]}")
+        print(f"Dim of data_msk : {shape_msk[0]}X{shape_msk[1]}X{shape_msk[2]}")
+
+        save_data(data_obs, "data_obs.npy")
+        save_data(data_act, "data_act.npy")
+        save_data(data_msk, "data_msk.npy")
+
         break
 
 
