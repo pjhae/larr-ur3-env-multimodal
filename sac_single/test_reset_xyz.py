@@ -61,7 +61,7 @@ parser.add_argument('--exp_type', default="sim",
 args = parser.parse_args()
 
 # Rendering (if exp_type is real, render should be FALSE)
-render = False
+render = True
 
 # Environment
 if args.exp_type == "sim":
@@ -206,7 +206,7 @@ n_dim_mask = 1
 
 data_obs = np.zeros([n_episode, n_horrizon, n_dim_state])
 data_act = np.zeros([n_episode, n_horrizon, n_dim_action])
-data_msk = np.zeros([n_episode, n_horrizon, n_dim_mask])
+data_msk = np.ones([n_episode, n_horrizon, n_dim_mask])
 
 # Start evaluation
 iteration = 0
@@ -314,7 +314,6 @@ while True:
         # Add data
         data_obs[episodes][step][:] = state[:6]
         data_act[episodes][step][:] = action[:2]
-        data_msk[episodes][step][:] = 1
 
         if np.linalg.norm(state[:2] - np.array([0.45, -0.325])) < 0.01 and step > 900:
             data_msk[episodes][step][:] = 0
@@ -421,7 +420,6 @@ while True:
         # Add data
         data_obs[episodes][step][:] = state[:6]
         data_act[episodes][step][:] = action[:2]
-        data_msk[episodes][step][:] = 1
 
         if np.linalg.norm(state[:2] - np.array([0.45, -0.325])) < 0.01 and step > 900:
             data_msk[episodes][step][:] = 0

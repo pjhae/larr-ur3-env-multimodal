@@ -22,10 +22,15 @@ checkpoints_dual/
 checkpoints_single/
 checkpoints_single_block1/
 checkpoints_single_block2/
-
 checkpoints_single_excellent/
+
 sac_single/video/
 sac_dual/video/
+
+sac_single/data/
+sac_single/multimodal_data/
+
+
 
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
