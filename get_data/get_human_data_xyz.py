@@ -1,89 +1,57 @@
+
+# General package
 import argparse
+import keyboard
 import datetime
 import gym
 import numpy as np
 import itertools
 import torch
-from sac import SAC
-from torch.utils.tensorboard import SummaryWriter
-from replay_memory import ReplayMemory
 import time
 import sys
-import gym_custom
-from gym_custom import spaces
-from gym_custom.envs.custom.ur_utils import URScriptWrapper_SingleUR3 as URScriptWrapper
-from gym_custom.envs.custom.ur_utils import NullObjectiveBase
-from gym_custom.envs.real.utils import ROSRate, prompt_yes_or_no
-from collections import OrderedDict
 import os
 import os.path as osp
 
-# # ROS related
-# import rospy
-# from std_msgs.msg import String
-# from geometry_msgs.msg import PoseStamped
+# Environment related
+import gym_custom
+from gym_custom import spaces
+from gym_custom.envs.custom.ur_utils import URScriptWrapper_SingleUR3 as URScriptWrapper
+from gym_custom.envs.real.utils import ROSRate, prompt_yes_or_no
+from collections import OrderedDict
+from get_data.utils import generate_action_sequence_2d, generate_action_sequence_3d
+from get_data.utils import UprightConstraint
+from get_data.utils import listener_wait_msg
 
-# def listener_wait_msg():
-
-#     rospy.init_node('ros_subscription_test_node')
-
-#     cube_msg = rospy.wait_for_message('optitrack/cube_rainbow/poseStamped', PoseStamped)
-
-#     return cube_msg.pose.position
+# ROS related
+import rospy
+from std_msgs.msg import String
+from geometry_msgs.msg import PoseStamped
 
 
-parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
-parser.add_argument('--env-name', default="HalfCheetah-v2",
-                    help='Mujoco Gym environment (default: HalfCheetah-v2)')
-parser.add_argument('--policy', default="Gaussian",
-                    help='Policy Type: Gaussian | Deterministic (default: Gaussian)')
-parser.add_argument('--eval', type=bool, default=True,
-                    help='Evaluates a policy a policy every 10 episode (default: True)')
-parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
-                    help='discount factor for reward (default: 0.99)')
-parser.add_argument('--tau', type=float, default=0.005, metavar='G',
-                    help='target smoothing coefficient(τ) (default: 0.005)')
-parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
-                    help='learning rate (default: 0.0003)')
-parser.add_argument('--alpha', type=float, default=0.005, metavar='G',
-                    help='Temperature parameter α determines the relative importance of the entropy\
-                            term against the reward (default: 0.2)')
-parser.add_argument('--automatic_entropy_tuning', type=bool, default=True, metavar='G',
-                    help='Automaically adjust α (default: True)')
-parser.add_argument('--seed', type=int, default=123456, metavar='N',
-                    help='random seed (default: 123456)')
-parser.add_argument('--batch_size', type=int, default=256, metavar='N',
-                    help='batch size (default: 256)')
-parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
-                    help='maximum number of steps (default: 1000000)')
-parser.add_argument('--hidden_size', type=int, default=256, metavar='N',
-                    help='hidden size (default: 256)')
-parser.add_argument('--updates_per_step', type=int, default=1, metavar='N',
-                    help='model updates per simulator step (default: 1)')
-parser.add_argument('--start_steps', type=int, default=10000, metavar='N',
-                    help='Steps sampling random actions (default: 10000)')
-parser.add_argument('--target_update_interval', type=int, default=1, metavar='N',
-                    help='Value target update per no. of updates per step (default: 1)')
-parser.add_argument('--replay_size', type=int, default=1000000, metavar='N',
-                    help='size of replay buffer (default: 10000000)')
-parser.add_argument('--cuda', action="store_false",
-                    help='run on CUDA (default: True)')
-# choose the env
-parser.add_argument('--exp_type', default="sim",
-                    help='choose sim or real')
-args = parser.parse_args()
 
-# Episode to test
-num_epi = 15840
-# Rendering (if exp_type is real, render should be FALSE)
-render = True
+#################################### USER OPTION #################################### 
+
+# Rendering 
+render = True # if exp_type is real, render should be FALSE
+
+# Posture constraint
+null_obj_func = UprightConstraint()
+
+# Max velocity
+max_velocity = (0.04, 0.04, 0)
+
+# Type of experiment
+exp_type = "real" # "sim" is not implemented yet
+
+##################################################################################### 
+
 
 # Environment
-if args.exp_type == "sim":
+if exp_type == "sim":
     env = gym_custom.make('single-ur3-xy-larr-for-train-v0')
     servoj_args, speedj_args = {'t': None, 'wait': None}, {'a': 5, 't': None, 'wait': None}
 
-elif args.exp_type == "real":
+elif exp_type == "real":
     env = gym_custom.make('single-ur3-larr-real-for-train-v0', # TODO
         host_ip_right='192.168.5.102',
         rate=20
@@ -104,7 +72,7 @@ else:
 obs = env.reset()
 dt = env.dt
 
-if args.exp_type == "sim":
+if exp_type == "sim":
     PID_gains = {'servoj': {'P': 1.0, 'I': 0.5, 'D': 0.2}, 'speedj': {'P': 0.20, 'I':10.0}}
     ur3_scale_factor = np.array([50.0, 50.0, 25.0, 10.0, 10.0, 10.0])*np.array([1.0, 1.0, 1.0, 2.5, 2.5, 2.5])
     gripper_scale_factor = np.array([1.0])
@@ -112,10 +80,10 @@ if args.exp_type == "sim":
     # scale factor
     env.wrapper_right.ur3_scale_factor[:6] = [24.52907494 ,24.02851783 ,25.56517597, 14.51868608 ,23.78797503, 21.61325463]
 
-elif args.exp_type == "real":
+elif exp_type == "real":
         env.env = env
 
-if args.exp_type == "real":
+if exp_type == "real":
     if prompt_yes_or_no('current qpos is \r\n right: %s deg?\r\n'
         %(np.rad2deg(env.env._init_qpos[:6]))) is False:
         print('exiting program!')
@@ -123,70 +91,11 @@ if args.exp_type == "real":
         sys.exit()
 time.sleep(1.0)
 
-# Seed
-env.seed(args.seed)
-env.action_space.seed(args.seed)
-torch.manual_seed(args.seed)
-np.random.seed(args.seed)
-
-
-COMMAND_LIMITS = {
-    'movej': [np.array([-0.04, -0.04, -0.0]),
-        np.array([0.04, 0.04, 0.0])] # [m]
-}
-
-def convert_action_to_space(action_limits):
-    if isinstance(action_limits, dict):
-        space = spaces.Dict(OrderedDict([
-            (key, convert_action_to_space(value))
-            for key, value in COMMAND_LIMITS.items()
-        ]))
-    elif isinstance(action_limits, list):
-        low = action_limits[0]
-        high = action_limits[1]
-        space = gym_custom.spaces.Box(low, high, dtype=action_limits[0].dtype)
-    else:
-        raise NotImplementedError(type(action_limits), action_limits)
-
-    return space
-
-def _set_action_space():
-    return convert_action_to_space({'right': COMMAND_LIMITS})
-
-action_space = _set_action_space()['movej']
-
-
-agent = SAC(4, action_space, args)
-
-# Memory
-memory = ReplayMemory(args.replay_size, args.seed)
-
-# Load the parameter
-agent.load_checkpoint("checkpoints_single/sac_checkpoint_{}_{}".format('single-ur3-larr-for-train-v0', num_epi), True)
-
-# Constraint
-class UprightConstraint(NullObjectiveBase):
-    
-    def __init__(self):
-        pass
-
-    def _evaluate(self, SO3):
-        axis_des = np.array([0, 0, -1])
-        axis_curr = SO3[:,2]
-        return 1.0 - np.dot(axis_curr, axis_des)
-    
-null_obj_func = UprightConstraint()
-
-
-# Start evaluation
-avg_reward = 0.
-avg_step = 0.
-episodes = 10
 
 while True:
     state = env.reset()
-    state[:2] = np.array([0.45, -0.325])
-    state = state[:4]
+    state[:3] = np.array([0.45, -0.325, 0.8])
+    state = state[:3]
     
     episode_reward = 0
     step = 0
@@ -194,38 +103,55 @@ while True:
 
     while not done:
 
-        # # # # ROS related
-        # cube_pos = listener_wait_msg()
-        # cube_pos_block_array = np.array([cube_pos.x, cube_pos.y]) -np.array([0.21217686, 0.51513129]) + np.array([-0.03, -0.31])
-        # state[2:4] = cube_pos_block_array
+        while not done:
 
-        # print(cube_pos_block_array, state[:2])
-        action = agent.select_action(state, evaluate=True)
-        curr_pos = np.concatenate([state[:2],[0.8]])
-        q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos+action, null_obj_func, arm='right')
-        dt = 1
-        qvel_right = (q_right_des - env.get_obs_dict()['right']['qpos'])/dt
+            ####  ROS related
+            # goal_pos = listener_wait_msg("goal_cube")
+            # red_pos = listener_wait_msg("red_cube")
+            # blue_pos = listener_wait_msg("blue_cube")
+            # calib_offset_goal = TODO
+            # calib_offset_block = TODO
+            # goal_pos -= calib_offset_goal
+            # block_pos -= calib_offset_block
 
-        next_state, reward, done, _  = env.step({
-            'right': {
-                'speedj': {'qd': qvel_right, 'a': speedj_args['a'], 't': speedj_args['t'], 'wait': speedj_args['wait']},
-                'move_gripper_force': {'gf': np.array([15.0])}
-            }
-        })
- 
-        if render == True :
-            env.render()
-        episode_reward += reward
-        step += 1
-        state = next_state[:4]
+            goal_pos = np.array([0.45, -0.325, 0.8])
+            curr_pos = np.concatenate([state[:2],[0.8]])
+            action_squence, _ = generate_action_sequence_3d(curr_pos, goal_pos, max_velocity)
+            action = action_squence[0]
+            q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos, null_obj_func, arm='right')
+            dt = 1
+            qvel_right = (q_right_des - env.get_obs_dict()['right']['qpos'])/dt
 
-         # If exp_type is real, evaluate just for 500 step
-        if args.exp_type == "real" and step == 600:
-            break   
-    
-    avg_reward = episode_reward/500
-    print('episode_reward :', episode_reward)
+            next_state, _, _, _  = env.step({
+                'right': {
+                    'speedj': {'qd': qvel_right, 'a': speedj_args['a'], 't': speedj_args['t'], 'wait': speedj_args['wait']},
+                    'move_gripper_force': {'gf': np.array([15.0])}
+                }
+            })
 
+            step += 1
+            state = next_state[:3]
+
+            event = keyboard.read_event()
+            if event.event_type == keyboard.KEY_DOWN:
+                if event.name == 'r':
+                    print("User pressed 'R' : RESET")
+                    pass
+
+                if event.name == 'p':
+                    print("User pressed 'P' : PAUSE")
+                    pass
+
+                if event.name == 's':
+                    print("User pressed 's' : SAVE")
+                    pass
+
+                if event.name == 'r':
+                    print("User pressed 'R' : RESET")
+                    pass
+
+            if render == True :
+                env.render()
 
 
 
