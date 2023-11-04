@@ -177,5 +177,9 @@ while True:
                 env.render()
 
 
+            if step == 1000:
+                break
+
+
 
 
