@@ -2,8 +2,8 @@
 # General package
 import argparse
 import keyboard
+
 import datetime
-import gym
 import numpy as np
 import itertools
 import torch
@@ -28,17 +28,16 @@ from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped
 
 
-
 #################################### USER OPTION #################################### 
 
 # Rendering 
-render = True # if exp_type is real, render should be FALSE
+render = False # if exp_type is real, render should be FALSE
 
 # Posture constraint
 null_obj_func = UprightConstraint()
 
 # Max velocity
-max_velocity = (0.04, 0.04, 0)
+max_velocity = (0.04, 0.04, 0.04)
 
 # Type of experiment
 exp_type = "real" # "sim" is not implemented yet
@@ -101,9 +100,9 @@ while True:
     step = 0
     done = False
 
-    while not done:
 
-        while not done:
+
+    while not done:
 
             ####  ROS related
             # goal_pos = listener_wait_msg("goal_cube")
@@ -113,12 +112,18 @@ while True:
             # calib_offset_block = TODO
             # goal_pos -= calib_offset_goal
             # block_pos -= calib_offset_block
+            
+            if step < 200:
+                goal_pos = np.array([0.0, -0.325, 0.8])
+            if step > 200 and step < 400:
+                goal_pos = np.array([0.0, -0.325, 1.0])
+            if step > 400:
+                goal_pos = np.array([0.45, -0.325, 0.8])
 
-            goal_pos = np.array([0.45, -0.325, 0.8])
             curr_pos = np.concatenate([state[:2],[0.8]])
             action_squence, _ = generate_action_sequence_3d(curr_pos, goal_pos, max_velocity)
             action = action_squence[0]
-            q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos, null_obj_func, arm='right')
+            q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos + action, null_obj_func, arm='right')
             dt = 1
             qvel_right = (q_right_des - env.get_obs_dict()['right']['qpos'])/dt
 
@@ -132,26 +137,28 @@ while True:
             step += 1
             state = next_state[:3]
 
-            event = keyboard.read_event()
-            if event.event_type == keyboard.KEY_DOWN:
-                if event.name == 'r':
-                    print("User pressed 'R' : RESET")
-                    pass
+            # if keyboard.is_pressed('c'):
+            #     env.step({'right': {'close_gripper': {}}})
+            #     time.sleep(3.0)
 
-                if event.name == 'p':
-                    print("User pressed 'P' : PAUSE")
-                    pass
+            # if keyboard.is_pressed('o'):
+            #     env.step({'right': {'open_gripper': {}}})
+            #     time.sleep(3.0)
 
-                if event.name == 's':
-                    print("User pressed 's' : SAVE")
-                    pass
 
-                if event.name == 'r':
-                    print("User pressed 'R' : RESET")
-                    pass
+            if step > 600:
+                 
+                env.step({'right': {'open_gripper': {}}})
+                time.sleep(3.0)
+                env.step({'right': {'close_gripper': {}}})
+                time.sleep(3.0)
+
+            if step == 2000:
+                 break
 
             if render == True :
                 env.render()
+
 
 
 
