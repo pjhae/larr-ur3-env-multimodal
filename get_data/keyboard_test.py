@@ -27,16 +27,3 @@ while True:
 listener.stop()
 
 
-
-# import keyboard
-# import time
-
-# for i in range(100):  # 예를 들어 100번 반복
-#     if keyboard.is_pressed('q'):  # 'q' 키가 눌렸는지 확인
-#         print(2)
-#     else:
-#         print(1)
-#     time.sleep(0.1)  # CPU 사용률을 낮추기 위해 잠시 대기
-
-
-
