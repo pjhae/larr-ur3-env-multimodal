@@ -46,14 +46,26 @@ exp_type = "real" # "sim" is not implemented yet
 
 
 # Keyboard
-key_pressed = False # initialize keyboard flag
+c_key_pressed = False # 각 키에 대한 상태를 추적하기 위한 변수
+o_key_pressed = False
 
-def on_press(key):
-    global key_pressed
-    key_pressed = True
+def on_press(key): # 키가 눌렸을 때 실행할 함수
+    global c_key_pressed, o_key_pressed
+    if key == keyboard.KeyCode.from_char('c'):
+        c_key_pressed = True
+    elif key == keyboard.KeyCode.from_char('o'):
+        o_key_pressed = True
 
-listener = keyboard.Listener(on_press=on_press) # Start the listener in the background
+def on_release(key): # 키가 놓였을 때 실행할 함수
+    global c_key_pressed, o_key_pressed
+    if key == keyboard.KeyCode.from_char('c'):
+        c_key_pressed = False
+    elif key == keyboard.KeyCode.from_char('o'):
+        o_key_pressed = False
+
+listener = keyboard.Listener(on_press=on_press, on_release=on_release) # 키보드 리스너 시작
 listener.start()
+
 
 # Environment
 if exp_type == "sim":
@@ -102,7 +114,6 @@ time.sleep(1.0)
 
 
 
-
 # Main loop
 
 while True:
@@ -114,7 +125,6 @@ while True:
     step = 0
     done = False
 
-    
 
     while not done:
 
@@ -151,19 +161,18 @@ while True:
             step += 1
             state = next_state[:3]
 
-            # if keyboard.is_pressed('c'):
-            #     env.step({'right': {'close_gripper': {}}})
-            #     time.sleep(3.0)
+            if c_key_pressed:
+                # 'c' 키를 눌러 그리퍼를 닫기
+                print("close_gripper")
+                env.step({'right': {'close_gripper': {}}})
+                time.sleep(3.0)
 
-            # if keyboard.is_pressed('o'):
-            #     env.step({'right': {'open_gripper': {}}})
-            #     time.sleep(3.0)
-
-            if key_pressed:
-                print("2")
-                key_pressed = False
-
-
+            if o_key_pressed:
+                # 'o' 키를 눌러 그리퍼를 열기
+                print("open_gripper")
+                env.step({'right': {'open_gripper': {}}})
+                time.sleep(3.0)
+                
             if render == True :
                 env.render()
 
