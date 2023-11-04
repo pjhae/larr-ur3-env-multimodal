@@ -45,6 +45,16 @@ exp_type = "real" # "sim" is not implemented yet
 ##################################################################################### 
 
 
+# Keyboard
+key_pressed = False # initialize keyboard flag
+
+def on_press(key):
+    global key_pressed
+    key_pressed = True
+
+listener = keyboard.Listener(on_press=on_press) # Start the listener in the background
+listener.start()
+
 # Environment
 if exp_type == "sim":
     env = gym_custom.make('single-ur3-xy-larr-for-train-v0')
@@ -91,6 +101,10 @@ if exp_type == "real":
 time.sleep(1.0)
 
 
+
+
+# Main loop
+
 while True:
     state = env.reset()
     state[:3] = np.array([0.45, -0.325, 0.8])
@@ -100,7 +114,7 @@ while True:
     step = 0
     done = False
 
-
+    
 
     while not done:
 
@@ -145,16 +159,10 @@ while True:
             #     env.step({'right': {'open_gripper': {}}})
             #     time.sleep(3.0)
 
+            if key_pressed:
+                print("2")
+                key_pressed = False
 
-            if step > 600:
-                 
-                env.step({'right': {'open_gripper': {}}})
-                time.sleep(3.0)
-                env.step({'right': {'close_gripper': {}}})
-                time.sleep(3.0)
-
-            if step == 2000:
-                 break
 
             if render == True :
                 env.render()
