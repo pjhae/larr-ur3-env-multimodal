@@ -25,9 +25,12 @@ def on_release(key):
 listener = keyboard.Listener(on_press=on_press, on_release=on_release)
 listener.start()
 
+i=0
 # 메인 루프
 while True:
-    print("1")
+    i+=1
+    if not(c_key_pressed or o_key_pressed):
+        print(i)
 
     if c_key_pressed:
         # 'c' 키를 눌러 그리퍼를 닫기
