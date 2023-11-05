@@ -1,7 +1,7 @@
 
 # General package
 import argparse
-import keyboard
+from pynput import keyboard
 
 import datetime
 import numpy as np
@@ -20,7 +20,9 @@ from gym_custom.envs.real.utils import ROSRate, prompt_yes_or_no
 from collections import OrderedDict
 from get_data.utils import generate_action_sequence_2d, generate_action_sequence_3d
 from get_data.utils import UprightConstraint
-from get_data.utils import listener_wait_msg
+# from get_data.utils import listener_wait_msg
+from get_data.ros_test import listener_wait_msg
+
 
 # ROS related
 import rospy
@@ -37,7 +39,7 @@ render = False # if exp_type is real, render should be FALSE
 null_obj_func = UprightConstraint()
 
 # Max velocity
-max_velocity = (0.04, 0.04, 0.04)
+max_velocity = (0.06, 0.06, 0.06)
 
 # Type of experiment
 exp_type = "real" # "sim" is not implemented yet
@@ -137,14 +139,20 @@ while True:
             # goal_pos -= calib_offset_goal
             # block_pos -= calib_offset_block
             
-            if step < 200:
-                goal_pos = np.array([0.0, -0.325, 0.8])
-            if step > 200 and step < 400:
-                goal_pos = np.array([0.0, -0.325, 1.0])
-            if step > 400:
-                goal_pos = np.array([0.45, -0.325, 0.8])
+            
+            cube1_pos, cube2_pos = listener_wait_msg()
+            cube2_pos_array = np.array([cube2_pos.x, cube2_pos.y, cube2_pos.z]) - np.array([-1.05037975 ,-0.41750526,  0.76240301] ) + np.array([0.45, -0.325, 0.8])
+            
+            goal_pos = cube2_pos_array 
+            
+            # if step < 200:
+            #     goal_pos = np.array([0.0, -0.325, 0.8])
+            # if step > 200 and step < 400:
+            #     goal_pos = np.array([0.0, -0.325, 1.0])
+            # if step > 400:
+            #     goal_pos = np.array([0.45, -0.325, 0.8])
 
-            curr_pos = np.concatenate([state[:2],[0.8]])
+            curr_pos = np.concatenate([state[:3]])
             action_squence, _ = generate_action_sequence_3d(curr_pos, goal_pos, max_velocity)
             action = action_squence[0]
             q_right_des, _ ,_ ,_ = env.inverse_kinematics_ee(curr_pos + action, null_obj_func, arm='right')
@@ -177,7 +185,7 @@ while True:
                 env.render()
 
 
-            if step == 1000:
+            if step == 10000:
                 break
 
 

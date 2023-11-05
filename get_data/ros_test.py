@@ -23,10 +23,8 @@ if __name__ == '__main__':
     while True:
  
         cube1_pos, cube2_pos = listener_wait_msg()
-        cube1_pos_array = np.array([cube1_pos.x, cube1_pos.y, cube1_pos.z]) - np.array([ 0.08846794, -1.09185982,  0.76178968])
-        cube2_pos_array = np.array([cube2_pos.x, cube2_pos.y, cube2_pos.z]) - np.array([[-0.02001864, -1.14144528,  0.76573527]]) + np.array([0.1, -0.3, 0.8])
-
-        msg_count += 1
+        cube1_pos_array = np.array([cube1_pos.x, cube1_pos.y, cube1_pos.z]) - np.array([ 0.83438993 ,-0.14621475 , 0.76058847] ) + np.array([0.45, -0.325, 0.8])
+        cube2_pos_array = np.array([cube2_pos.x, cube2_pos.y, cube2_pos.z]) - np.array([-1.05037975 ,-0.41750526,  0.76240301] ) + np.array([0.45, -0.325, 0.8])
         print("ctrl : ", cube1_pos_array, cube2_pos_array)
  
 

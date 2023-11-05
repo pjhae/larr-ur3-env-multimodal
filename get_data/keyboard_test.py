@@ -26,6 +26,9 @@ listener = keyboard.Listener(on_press=on_press, on_release=on_release)
 listener.start()
 
 i=0
+
+
+
 # 메인 루프
 while True:
     i+=1
